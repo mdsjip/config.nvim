@@ -29,6 +29,21 @@ return {
     local dapui = require 'dapui'
     return {
       -- Basic debugging keymaps, feel free to change to your liking!
+      {
+        '<leader>du',
+        function()
+          require('dapui').toggle {}
+        end,
+        desc = 'Dap UI',
+      },
+      {
+        '<leader>de',
+        function()
+          require('dapui').eval()
+        end,
+        desc = 'Eval',
+        mode = { 'n', 'v' },
+      },
       { '<F5>', dap.continue, desc = 'Debug: Start/Continue' },
       { '<F1>', dap.step_into, desc = 'Debug: Step Into' },
       { '<F2>', dap.step_over, desc = 'Debug: Step Over' },
@@ -63,7 +78,7 @@ return {
       -- online, please don't ask me how to install them :)
       ensure_installed = {
         -- Update this to ensure that you have the debuggers for the langs you want
-        'delve',
+        -- 'delve',
       },
     }
 

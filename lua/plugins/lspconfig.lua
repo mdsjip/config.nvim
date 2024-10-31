@@ -21,6 +21,22 @@ return {
       { 'williamboman/mason.nvim', config = true }, -- NOTE: Must be loaded before dependants
       'williamboman/mason-lspconfig.nvim',
       'WhoIsSethDaniel/mason-tool-installer.nvim',
+      -- { 'nvim-java/nvim-java', lazy = false, opts = {} },
+      'nvim-java/nvim-java',
+      -- {
+      --   'ray-x/lsp_signature.nvim',
+      --   -- event = 'InsertEnter',
+      --   event = 'LspAttach',
+      --   opts = {
+      --     -- bind = true,
+      --     -- handler_opts = {
+      --     --   border = 'rounded',
+      --     -- },
+      --   },
+      --   config = function(_, opts)
+      --     require('lsp_signature').setup(opts)
+      --   end,
+      -- },
 
       -- Useful status updates for LSP.
       -- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
@@ -84,30 +100,34 @@ return {
           --  Useful when your language has ways of declaring types without an actual implementation.
           map('gI', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
 
+          -- WARN: This is not Goto Definition, this is Goto Declaration.
+          --  For example, in C this would take you to the header.
+          map('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
+
           -- Jump to the type of the word under your cursor.
           --  Useful when you're not sure what type a variable is and you want to see
           --  the definition of its *type*, not where it was *defined*.
           map('<leader>D', require('telescope.builtin').lsp_type_definitions, 'Type [D]efinition')
 
-          -- Fuzzy find all the symbols in your current document.
-          --  Symbols are things like variables, functions, types, etc.
-          map('<leader>ds', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
-
-          -- Fuzzy find all the symbols in your current workspace.
-          --  Similar to document symbols, except searches over your entire project.
-          map('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
+          -- -- Fuzzy find all the symbols in your current document.
+          -- --  Symbols are things like variables, functions, types, etc.
+          -- map('<leader>ds', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
+          --
+          -- -- Fuzzy find all the symbols in your current workspace.
+          -- --  Similar to document symbols, except searches over your entire project.
+          -- map('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
 
           -- Rename the variable under your cursor.
           --  Most Language Servers support renaming across files, etc.
           map('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
 
+          -- Signature help under your cursor.
+          map('gK', vim.lsp.buf.signature_help, 'Signature Help')
+          map('<c-k>', vim.lsp.buf.signature_help, 'Signature Help', 'i')
+
           -- Execute a code action, usually your cursor needs to be on top of an error
           -- or a suggestion from your LSP for this to activate.
           map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction', { 'n', 'x' })
-
-          -- WARN: This is not Goto Definition, this is Goto Declaration.
-          --  For example, in C this would take you to the header.
-          map('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
 
           -- The following two autocommands are used to highlight references of the
           -- word under your cursor when your cursor rests there for a little while.
@@ -178,8 +198,8 @@ return {
       local servers = {
         -- clangd = {},
         -- gopls = {},
-        -- pyright = {},
-        -- rust_analyzer = {},
+        pyright = {},
+        rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
@@ -203,6 +223,12 @@ return {
             },
           },
         },
+        kotlin_language_server = {
+          init_options = {
+            storagePath = require('lspconfig/util').path.join(vim.env.XDG_DATA_HOME, 'nvim-data'),
+          },
+        },
+        jdtls = {},
       }
 
       -- Ensure the servers and tools above are installed
@@ -230,6 +256,74 @@ return {
             -- certain features of an LSP (for example, turning off formatting for ts_ls)
             server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
             require('lspconfig')[server_name].setup(server)
+          end,
+          jdtls = function()
+            require('java').setup {
+              -- Your custom jdtls settings goes here
+            }
+
+            require('lspconfig').jdtls.setup {
+              -- Your custom nvim-java configuration goes here
+              settings = {
+
+                java = {
+                  configuration = {
+                    runtimes = {
+                      {
+                        name = 'JavaSE-21',
+                        path = '/usr/lib/jvm/java-21-openjdk',
+                        default = false,
+                      },
+                      {
+                        name = 'JavaSE-17',
+                        path = '/usr/lib/jvm/java-17-openjdk',
+                        default = true,
+                      },
+                    },
+                  },
+                },
+
+                --       -- https://github.com/ray-x/lsp_signature.nvim/issues/97#issuecomment-1960919483
+                --       signatureHelp = { enabled = true },
+                --       contentProvider = { preferred = 'fernflower' }, -- Use fernflower to decompile library code
+                --       -- Specify any completion options
+                --       completion = {
+                --         favoriteStaticMembers = {
+                --           'org.hamcrest.MatcherAssert.assertThat',
+                --           'org.hamcrest.Matchers.*',
+                --           'org.hamcrest.CoreMatchers.*',
+                --           'org.junit.jupiter.api.Assertions.*',
+                --           'java.util.Objects.requireNonNull',
+                --           'java.util.Objects.requireNonNullElse',
+                --           'org.mockito.Mockito.*',
+                --         },
+                --         filteredTypes = {
+                --           'com.sun.*',
+                --           'io.micrometer.shaded.*',
+                --           'java.awt.*',
+                --           'jdk.*',
+                --           'sun.*',
+                --         },
+                --       },
+                -- Specify any options for organizing imports
+                sources = {
+                  organizeImports = {
+                    starThreshold = 9999,
+                    staticStarThreshold = 9999,
+                  },
+                },
+                --       -- How code generation should act
+                --       codeGeneration = {
+                --         toString = {
+                --           template = '${object.className}{${member.name()}=${member.value}, ${otherMembers}}',
+                --         },
+                --         hashCodeEquals = {
+                --           useJava7Objects = true,
+                --         },
+                --         useBlocks = true,
+                --       },
+              },
+            }
           end,
         },
       }
